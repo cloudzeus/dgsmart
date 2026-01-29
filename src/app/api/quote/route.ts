@@ -25,6 +25,9 @@ export async function POST(request: Request) {
             },
         })
 
+        let mailSent = false
+        let mailErrorDetails = null
+
         // Send email notification
         try {
             await sendSharedMail({
@@ -36,11 +39,17 @@ export async function POST(request: Request) {
                        <p><strong>Service:</strong> ${service}</p>
                        <p><strong>Message:</strong> ${message}</p>`
             });
-        } catch (mailError) {
+            mailSent = true
+        } catch (mailError: any) {
             console.error('Failed to send quote email:', mailError)
+            mailErrorDetails = mailError.message
         }
 
-        return NextResponse.json(quoteRequest, { status: 201 })
+        return NextResponse.json({
+            ...quoteRequest,
+            mailStatus: mailSent ? 'sent' : 'failed',
+            mailError: mailErrorDetails
+        }, { status: 201 })
     } catch (error: any) {
         console.error('Quote request error details:', {
             message: error.message,

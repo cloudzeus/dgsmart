@@ -49,7 +49,21 @@ export async function sendSharedMail({ to, subject, body }: SendMailParams) {
     };
 
     // The key part: send from the shared mailbox ID/email
-    return await client
-        .api(`/users/${sharedMailbox}/sendMail`)
-        .post(sendMailPayload);
+    console.log(`Attempting to send email via Microsoft Graph from ${sharedMailbox} to ${to}...`);
+
+    try {
+        const result = await client
+            .api(`/users/${sharedMailbox}/sendMail`)
+            .post(sendMailPayload);
+        console.log('Microsoft Graph sendMail success!');
+        return result;
+    } catch (error: any) {
+        console.error('Microsoft Graph API Error Detail:', {
+            message: error.message,
+            code: error.code,
+            statusCode: error.statusCode,
+            body: error.body,
+        });
+        throw error;
+    }
 }

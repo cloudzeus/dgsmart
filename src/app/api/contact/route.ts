@@ -24,6 +24,9 @@ export async function POST(request: Request) {
             },
         })
 
+        let mailSent = false
+        let mailErrorDetails = null
+
         // Send email notification
         try {
             await sendSharedMail({
@@ -34,11 +37,17 @@ export async function POST(request: Request) {
                        <p><strong>Email:</strong> ${email}</p>
                        <p><strong>Message:</strong> ${message}</p>`
             });
-        } catch (mailError) {
+            mailSent = true
+        } catch (mailError: any) {
             console.error('Failed to send contact email:', mailError)
+            mailErrorDetails = mailError.message
         }
 
-        return NextResponse.json(contactMessage, { status: 201 })
+        return NextResponse.json({
+            ...contactMessage,
+            mailStatus: mailSent ? 'sent' : 'failed',
+            mailError: mailErrorDetails
+        }, { status: 201 })
     } catch (error: any) {
         console.error('Contact form error details:', {
             message: error.message,

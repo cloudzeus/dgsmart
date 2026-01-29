@@ -2,18 +2,18 @@ import { NextResponse } from 'next/server';
 import { sendSharedMail } from '@/lib/microsoftGraph';
 
 export async function POST(request: Request) {
-    try {
-        const { email, name, message, subject, company, phone, service } = await request.json();
+  try {
+    const { email, name, message, subject, company, phone, service } = await request.json();
 
-        if (!email || !message) {
-            return NextResponse.json({ error: "Email and message are required" }, { status: 400 });
-        }
+    if (!email || !message) {
+      return NextResponse.json({ error: "Email and message are required" }, { status: 400 });
+    }
 
-        // Send notification to the shared mailbox (about the new contact)
-        await sendSharedMail({
-            to: process.env.SHARED_MAILBOX_ADDRESS!,
-            subject: subject || `New Contact Form: ${service || 'General Inquiry'} from ${name}`,
-            body: `
+    // Send notification to the shared mailbox (about the new contact)
+    await sendSharedMail({
+      to: process.env.SHARED_MAILBOX_ADDRESS!,
+      subject: subject || `New Contact Form: ${service || 'General Inquiry'} from ${name}`,
+      body: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; background-color: #f8fafc;">
           <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
             <div style="background: #0f172a; padding: 20px; text-align: center;">
@@ -49,13 +49,13 @@ export async function POST(request: Request) {
           </div>
         </div>
       `,
-        });
+    });
 
-        // Optionally send a confirmation email to the user
-        await sendSharedMail({
-            to: email,
-            subject: `Thank you for contacting DGSMART, ${name}`,
-            body: `
+    // Optionally send a confirmation email to the user
+    await sendSharedMail({
+      to: email,
+      subject: `Thank you for contacting DGSMART, ${name}`,
+      body: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; background-color: #f8fafc;">
           <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
             <div style="background: #4ade80; padding: 20px; text-align: center;">
@@ -77,11 +77,20 @@ export async function POST(request: Request) {
           </div>
         </div>
       `,
-        });
+    });
 
-        return NextResponse.json({ success: true, message: "Emails sent successfully" });
-    } catch (error: any) {
-        console.error("Mail Error:", error);
-        return NextResponse.json({ error: error.message || "Failed to send email" }, { status: 500 });
-    }
+    return NextResponse.json({ success: true, message: "Emails sent successfully" });
+  } catch (error: any) {
+    console.error("Mail Error Details:", {
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode,
+      body: error.body,
+      error
+    });
+    return NextResponse.json({
+      error: error.message || "Failed to send email",
+      details: error.body || error.message
+    }, { status: 500 });
+  }
 }
