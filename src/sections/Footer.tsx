@@ -9,6 +9,7 @@ import {
   Instagram,
   ArrowRight
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const footerLinks = {
   services: [
@@ -39,10 +40,34 @@ const footerLinks = {
 
 export default function Footer() {
   const [email, setEmail] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setEmail('')
+    if (!email) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe')
+      }
+
+      toast.success('Εγγραφήκατε επιτυχώς στο newsletter!')
+      setEmail('')
+    } catch (error: any) {
+      console.error('Newsletter error:', error)
+      toast.error(error.message || 'Υπήρξε ένα σφάλμα. Παρακαλούμε προσπαθήστε ξανά.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

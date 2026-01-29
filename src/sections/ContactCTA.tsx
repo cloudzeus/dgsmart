@@ -71,20 +71,40 @@ export default function ContactCTA() {
     return () => ctx.revert()
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Animate form submission
-    gsap.to(formRef.current, {
-      scale: 0.98,
-      duration: 0.1,
-      yoyo: true,
-      repeat: 1,
-      ease: 'power2.inOut',
-    })
 
-    setIsSubmitted(true)
-    setTimeout(() => setIsSubmitted(false), 3000)
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) throw new Error('Failed to send message')
+
+      // Animate form submission success
+      gsap.to(formRef.current, {
+        scale: 0.98,
+        duration: 0.1,
+        yoyo: true,
+        repeat: 1,
+        ease: 'power2.inOut',
+      })
+
+      setIsSubmitted(true)
+      setFormData({
+        name: '',
+        email: '',
+        company: '',
+        phone: '',
+        message: '',
+      })
+      setTimeout(() => setIsSubmitted(false), 5000)
+    } catch (error) {
+      console.error('Error submitting form:', error)
+      alert('Υπήρξε ένα σφάλμα κατά την αποστολή του μηνύματος. Παρακαλούμε προσπαθήστε ξανά.')
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -128,7 +148,7 @@ export default function ContactCTA() {
               Επικοινωνήστε μαζί μας σήμερα
             </p>
             <p className="text-slate-600 text-lg mb-8">
-              Έχετε ένα project στο μυαλό σας; Θα χαρούμε να σας ακούσουμε. 
+              Έχετε ένα project στο μυαλό σας; Θα χαρούμε να σας ακούσουμε.
               Στείλτε μας ένα μήνυμα και θα σας απαντήσουμε το συντομότερο δυνατό.
             </p>
 
@@ -166,9 +186,9 @@ export default function ContactCTA() {
 
           {/* Right - Form */}
           <div className="contact-form-container">
-            <form 
+            <form
               ref={formRef}
-              onSubmit={handleSubmit} 
+              onSubmit={handleSubmit}
               className="space-y-6 bg-slate-50 p-8 rounded-2xl shadow-xl border border-slate-100"
             >
               <div className="grid sm:grid-cols-2 gap-6">
@@ -263,11 +283,10 @@ export default function ContactCTA() {
               <button
                 type="submit"
                 disabled={isSubmitted}
-                className={`group flex items-center justify-center gap-2 w-full px-8 py-4 font-semibold rounded-lg transition-all duration-300 ${
-                  isSubmitted
+                className={`group flex items-center justify-center gap-2 w-full px-8 py-4 font-semibold rounded-lg transition-all duration-300 ${isSubmitted
                     ? 'bg-green-500 text-white'
                     : 'bg-secondary text-white hover:bg-secondary-dark hover:shadow-lg hover:shadow-secondary/30'
-                }`}
+                  }`}
               >
                 {isSubmitted ? (
                   <>

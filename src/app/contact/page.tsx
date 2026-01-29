@@ -58,6 +58,8 @@ export default function Contact() {
         service: '',
         message: '',
     })
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitError, setSubmitError] = useState<string | null>(null)
     const [isSubmitted, setIsSubmitted] = useState(false)
     const pageRef = useRef<HTMLDivElement>(null)
 
@@ -88,10 +90,42 @@ export default function Contact() {
         return () => ctx.revert()
     }, [])
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setIsSubmitted(true)
-        setTimeout(() => setIsSubmitted(false), 3000)
+        setIsSubmitting(true)
+        setSubmitError(null)
+
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send message')
+            }
+
+            setIsSubmitted(true)
+            setFormData({
+                name: '',
+                email: '',
+                company: '',
+                phone: '',
+                service: '',
+                message: '',
+            })
+            setTimeout(() => setIsSubmitted(false), 5000)
+        } catch (error: any) {
+            console.error('Submission error:', error)
+            setSubmitError(error.message || 'Something went wrong. Please try again later.')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -292,11 +326,19 @@ export default function Contact() {
                                     />
                                 </div>
 
+                                {submitError && (
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+                                        {submitError}
+                                    </div>
+                                )}
+
                                 <button
                                     type="submit"
-                                    disabled={isSubmitted}
+                                    disabled={isSubmitting || isSubmitted}
                                     className={`mt-6 w-full group flex items-center justify-center gap-2 px-8 py-4 font-semibold rounded-lg transition-all duration-300 ${isSubmitted
-                                            ? 'bg-green-500 text-white'
+                                        ? 'bg-green-500 text-white'
+                                        : isSubmitting
+                                            ? 'bg-secondary/70 text-white cursor-wait'
                                             : 'bg-secondary text-white hover:bg-secondary-dark hover:shadow-lg hover:shadow-secondary/30'
                                         }`}
                                 >
@@ -304,6 +346,11 @@ export default function Contact() {
                                         <>
                                             <Check className="w-5 h-5" />
                                             Το μήνυμα εστάλη επιτυχώς!
+                                        </>
+                                    ) : isSubmitting ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Αποστολή...
                                         </>
                                     ) : (
                                         <>

@@ -30,11 +30,14 @@ export default function QuoteModal({ isOpen, onClose }: QuoteModalProps) {
     service: '',
     message: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      setError(null)
     } else {
       document.body.style.overflow = 'unset'
     }
@@ -43,21 +46,40 @@ export default function QuoteModal({ isOpen, onClose }: QuoteModalProps) {
     }
   }, [isOpen])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitted(true)
-    setTimeout(() => {
-      setIsSubmitted(false)
-      setFormData({
-        name: '',
-        email: '',
-        company: '',
-        phone: '',
-        service: '',
-        message: '',
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       })
-      onClose()
-    }, 2000)
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to send quote request')
+
+      setIsSubmitted(true)
+      setTimeout(() => {
+        setIsSubmitted(false)
+        setFormData({
+          name: '',
+          email: '',
+          company: '',
+          phone: '',
+          service: '',
+          message: '',
+        })
+        onClose()
+      }, 3000)
+    } catch (error: any) {
+      console.error('Error submitting quote request:', error)
+      setError(error.message || 'Υπήρξε ένα σφάλμα. Παρακαλούμε προσπαθήστε ξανά.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -220,13 +242,29 @@ export default function QuoteModal({ isOpen, onClose }: QuoteModalProps) {
                       />
                     </div>
 
+                    {error && (
+                      <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
+                        {error}
+                      </div>
+                    )}
+
                     <button
                       type="submit"
-                      className="w-full group flex items-center justify-center gap-2 px-8 py-4 bg-secondary text-white font-semibold rounded-lg hover:bg-secondary-dark hover:shadow-lg hover:shadow-secondary/30 transition-all duration-300"
+                      disabled={isSubmitting}
+                      className="w-full group flex items-center justify-center gap-2 px-8 py-4 bg-secondary text-white font-semibold rounded-lg hover:bg-secondary-dark hover:shadow-lg hover:shadow-secondary/30 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      <Send className="w-5 h-5" />
-                      Αποστολή Αίτησης
-                      <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Αποστολή...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-5 h-5" />
+                          Αποστολή Αίτησης
+                          <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                        </>
+                      )}
                     </button>
 
                     <p className="text-xs text-center text-slate-500">

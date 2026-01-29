@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: "Η DGSMART είναι ηγέτης στην ενσωμάτωση AI και IoT λύσεων. Παρέχουμε LiDAR ανίχνευση, έξυπνη γεωργία, έξυπνα κτίρια και ολοκληρωμένη ενσωμάτωση ERP.",
 };
 
+import { Toaster } from 'sonner';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,6 +22,7 @@ export default function RootLayout({
     <html lang="el">
       <body className={`${inter.className} antialiased`}>
         {children}
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );
