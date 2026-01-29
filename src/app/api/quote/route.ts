@@ -14,23 +14,12 @@ export async function POST(request: Request) {
             )
         }
 
-        const quoteRequest = await prisma.quoteRequest.create({
-            data: {
-                name,
-                email,
-                company,
-                phone,
-                service,
-                message,
-            },
-        })
-
-        let mailSent = false
-        let mailErrorDetails = null
-
-        // Send email notification
-        try {
-            await sendSharedMail({
+        // Execute DB save and Email send independently and in parallel
+        const [dbResult, mailResult] = await Promise.allSettled([
+            prisma.quoteRequest.create({
+                data: { name, email, company, phone, service, message },
+            }),
+            sendSharedMail({
                 to: process.env.SHARED_MAILBOX_ADDRESS!,
                 subject: `New Quote Request: ${service} from ${name}`,
                 body: `<p>You have a new quote request:</p>
@@ -38,30 +27,29 @@ export async function POST(request: Request) {
                        <p><strong>Email:</strong> ${email}</p>
                        <p><strong>Service:</strong> ${service}</p>
                        <p><strong>Message:</strong> ${message}</p>`
-            });
-            mailSent = true
-        } catch (mailError: any) {
-            console.error('Failed to send quote email:', mailError)
-            mailErrorDetails = mailError.message
+            })
+        ]);
+
+        const dbSuccess = dbResult.status === 'fulfilled';
+        const mailSuccess = mailResult.status === 'fulfilled';
+
+        if (!dbSuccess) {
+            console.error('Database failed but continuing to respond:', (dbResult as PromiseRejectedResult).reason);
+        }
+        if (!mailSuccess) {
+            console.error('Email failed but continuing to respond:', (mailResult as PromiseRejectedResult).reason);
         }
 
         return NextResponse.json({
-            ...quoteRequest,
-            mailStatus: mailSent ? 'sent' : 'failed',
-            mailError: mailErrorDetails
-        }, { status: 201 })
+            success: true,
+            dbStatus: dbSuccess ? 'saved' : 'failed',
+            mailStatus: mailSuccess ? 'sent' : 'failed',
+            data: dbSuccess ? (dbResult as PromiseFulfilledResult<any>).value : null,
+            mailError: !mailSuccess ? (mailResult as PromiseRejectedResult).reason?.message : null
+        }, { status: 201 });
+
     } catch (error: any) {
-        console.error('Quote request error details:', {
-            message: error.message,
-            stack: error.stack,
-            error
-        })
-        return NextResponse.json(
-            {
-                error: 'Internal Server Error',
-                details: error.message
-            },
-            { status: 500 }
-        )
+        console.error('Critical API error:', error);
+        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
 }
