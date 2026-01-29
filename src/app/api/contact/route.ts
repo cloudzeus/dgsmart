@@ -39,10 +39,17 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(contactMessage, { status: 201 })
-    } catch (error) {
-        console.error('Contact form error:', error)
+    } catch (error: any) {
+        console.error('Contact form error details:', {
+            message: error.message,
+            stack: error.stack,
+            error
+        })
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            {
+                error: 'Internal Server Error',
+                details: error.message
+            },
             { status: 500 }
         )
     }

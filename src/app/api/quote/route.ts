@@ -41,10 +41,17 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(quoteRequest, { status: 201 })
-    } catch (error) {
-        console.error('Quote request error:', error)
+    } catch (error: any) {
+        console.error('Quote request error details:', {
+            message: error.message,
+            stack: error.stack,
+            error
+        })
         return NextResponse.json(
-            { error: 'Internal Server Error' },
+            {
+                error: 'Internal Server Error',
+                details: error.message
+            },
             { status: 500 }
         )
     }
